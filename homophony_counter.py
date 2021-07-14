@@ -21,11 +21,14 @@ EXCEPTIONS = {
 class EndLoop(Exception): 
     pass
 
-def gather_utterances(data, syntax):
+def gather_utterances(data, syntax, want_children):
     """ Collect adult utterances with the syntactic categorical pattern cl n.
     Return the new data frame.
     """
-    data = data[~data["speaker_code"].isin(CHILDREN)]
+    if want_children:
+        data = data[data["speaker_code"].isin(CHILDREN)]
+    else:
+        data = data[~data["speaker_code"].isin(CHILDREN)]
 
     syntax = [s + "(?:[^a-z]|$)" for s in syntax]
     data = data[data["part_of_speech"].str.contains("|".join(syntax), na=False)]
@@ -42,7 +45,8 @@ def get_cl_indices(POS):
     """
     return [i for i in range(len(POS))
             if (len(POS) > i + 1) and POS[i] == "cl" and POS[i + 1] == "n"
-            or (len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adv" and POS[i + 2] == "n"]
+            or (len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adv" and POS[i + 2] == "n"
+            or (len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adj" and POS[i + 2] == "n"]
 
 def update_homophony_counter(counter, noun_phone, noun_symbol, classifier_phone):
     """ Update the homophony counter of the form
@@ -68,14 +72,15 @@ def count_classifier_homophony(data):
     cl_phone_symbol_map = {}
     incongruent_list = []
 
+    # Handle congruent cases, where we can directly index the classifier, and save incongruency for later
     for index, row in data.iterrows():
         POS = row["part_of_speech"].split()
         cl_indicies = get_cl_indices(POS)
         
         for i in cl_indicies:
             try:
-                if len(row["gloss"].split()) == len(row["stem"].split()):  # Handle congruent cases, where we can directly index the classifier
-                    noun_offset = 2 if POS[i + 1] == "adv" else 1
+                if len(row["gloss"].split()) == len(row["stem"].split()): 
+                    noun_offset = 2 if (POS[i + 1] == "adv" or POS[i + 1] == "adj") else 1
                     noun_phone = row["stem"].split()[i + noun_offset]
                     noun_symbol = row["gloss"].split()[i + noun_offset]                    
                     classifier_phone = row["stem"].split()[i]
@@ -102,7 +107,7 @@ def count_classifier_homophony(data):
             cl_indicies = get_cl_indices(POS)
             
             for i in cl_indicies:
-                noun_offset = 2 if POS[i + 1] == "adv" else 1
+                noun_offset = 2 if (POS[i + 1] == "adv" or POS[i + 1] == "adj") else 1
                 noun_phone = row["stem"].split()[i + noun_offset]
                 classifier_phone = row["stem"].split()[i]
                 
@@ -112,6 +117,7 @@ def count_classifier_homophony(data):
                     print(row)
                     continue
 
+                # TODO: Instead of iterating by index from 0...n, try a oscillating algorithm? 
                 cl_symbol_index = None
                 try:
                     for cl_s in cl_symbols:
@@ -124,7 +130,7 @@ def count_classifier_homophony(data):
                     continue
 
                 if cl_symbol_index:
-                    noun_symbol = row["gloss"].split()[cl_symbol_index + noun_offset]  # Possible noun_offset still buggy.
+                    noun_symbol = row["gloss"].split()[cl_symbol_index + noun_offset]  # Possible noun_offset still buggy due to 'adv'. 
                 else:
                     print(row)
                     continue
@@ -136,16 +142,14 @@ def count_classifier_homophony(data):
     return counter
 
 
-def main(collection, language, syntax):
+def main(collection, language, syntax, want_children):
     path = "./corpora/{}/{}/".format(collection, language)
 
     data_cl = pd.DataFrame(columns=['id', 'gloss', 'stem', 'corpus_name', 'part_of_speech', 'speaker_code', 'collection_name'])
     for file in os.listdir(path):
         if file.endswith('.csv'):
             data = pd.read_csv(path + file).filter(items=['id', 'gloss', 'stem', 'corpus_name', 'part_of_speech', 'speaker_code', 'collection_name'], axis=1)
-            data = gather_utterances(data, syntax)
+            data = gather_utterances(data, syntax, want_children)
             data_cl = data_cl.append(data, ignore_index=True)
 
-    data_cl.to_csv("./output/cl.csv")
-
-    return count_classifier_homophony(data_cl)
+    return data_cl, count_classifier_homophony(data_cl)
