@@ -119,10 +119,14 @@ def count_classifier_homophony(data, syntax):
             cl_indicies = get_cl_indices(POS, syntax)
             
             for i in cl_indicies:
-                noun_offset = 2 if (POS[i + 1] == "adv" or POS[i + 1] == "adj") else 1
-                noun_phone = row["stem"].split()[i + noun_offset]
-                classifier_phone = row["stem"].split()[i]
-                
+                try:
+                    noun_offset = 2 if (POS[i + 1] == "adv" or POS[i + 1] == "adj") else 1
+                    noun_phone = row["stem"].split()[i + noun_offset]
+                    classifier_phone = row["stem"].split()[i]
+                except IndexError:
+                    unresolved.append(row)
+                    continue
+
                 if classifier_phone in cl_phone_symbol_map:
                     cl_symbols = cl_phone_symbol_map[classifier_phone]
                 else:
@@ -142,7 +146,11 @@ def count_classifier_homophony(data, syntax):
                     continue
 
                 if cl_symbol_index:
-                    noun_symbol = row["gloss"].split()[cl_symbol_index + noun_offset]  # Possible noun_offset still buggy due to 'adv'. 
+                    try:
+                        noun_symbol = row["gloss"].split()[cl_symbol_index + noun_offset]  # Possible noun_offset still buggy due to 'adv'. 
+                    except IndexError:
+                        unresolved.append(row)
+                        continue
                 else:
                     unresolved.append(row)
                     continue
