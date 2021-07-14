@@ -1,0 +1,8 @@
+# Input and output
+corpora/*
+output/*
+
+# Settings
+__pycache__
+
+# Misc files
