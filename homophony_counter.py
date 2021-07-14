@@ -132,49 +132,6 @@ def count_classifier_homophony(data):
                 incongruent_list.remove(index)
                 # TODO: Store row information, if necessary, instead of counts
                 update_homophony_counter(counter, noun_phone, noun_symbol, classifier_phone)
-
-    # for index, row in data.iterrows():
-    #     POS = row["part_of_speech"].split()
-    #     # TODO: Reduce this to just "cl" when the todo above is fixed. Or maybe not, still need to verify there is an n. 
-    #     classifier_indecies = [i for i in range(len(POS)) 
-    #                            if (len(POS) > i + 1 and POS[i] == "cl" and POS[i + 1] == "n") #]
-    #                            or (len(POS) > i + 2 and POS[i] == "cl" and POS[i + 1] == "adv" and POS[i + 2] == "n")]
-
-    #     for i in classifier_indecies:
-    #         try: 
-    #             if not is_exception(row["gloss"].split()[i + 1], collection, language):
-    #                 if POS[i + 1] == "adv":
-    #                     noun_phone = row["stem"].split()[i + 2]
-    #                     noun_symbol = row["gloss"].split()[i + 2]
-    #                 else:
-    #                     noun_phone = row["stem"].split()[i + 1]
-    #                     noun_symbol = row["gloss"].split()[i + 1]
-    #                 classifier_phone = row["stem"].split()[i]
-    #             else:
-    #                 # print("Index:", index)
-    #                 # print("Classifier Index:", i)
-    #                 # print("Noun phone", noun_phone)
-    #                 # print("Noun symbol", noun_symbol)
-    #                 # print("Classifier phone", classifier_phone)
-    #                 # print(row)
-    #                 if POS[i + 1] == "adv":
-    #                     noun_phone = row["stem"].split()[i + 2]
-    #                     noun_symbol = row["gloss"].split()[i + 3]
-    #                 else:
-    #                     noun_phone = row["stem"].split()[i + 1]
-    #                     noun_symbol = row["gloss"].split()[i + 2]
-    #                 classifier_phone = row["stem"].split()[i]
-    #         except IndexError:
-    #             # print(row)
-    #             continue
-
-    #         if noun_phone not in counter:
-    #             counter[noun_phone] = {}
-    #         if noun_symbol not in counter[noun_phone]:
-    #             counter[noun_phone][noun_symbol] = {}
-    #         if classifier_phone not in counter[noun_phone][noun_symbol]:
-    #             counter[noun_phone][noun_symbol][classifier_phone] = 0
-    #         counter[noun_phone][noun_symbol][classifier_phone] += 1
     
     return counter
 
