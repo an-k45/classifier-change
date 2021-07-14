@@ -1,0 +1,4 @@
+noun_regular: ["cl n", "cl adv n", "cl adj n"]
+num: noun_regular with "num " prepended
+dem: noun_regular with "dem " prepended
+det: noun_regular with "det " prepended

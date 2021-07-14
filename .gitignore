@@ -1,6 +1,7 @@
 # Input and output
 corpora/*
 output/*
+!output/syntax_guide.txt
 
 # Settings
 __pycache__
