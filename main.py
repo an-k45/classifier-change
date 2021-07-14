@@ -27,7 +27,7 @@ if __name__ == "__main__":
     collection = "Chinese"
     language = "Mandarin"
     want_children = False
-    syntax_type = "noun_regular"
+    syntax_type = "not_noun_all"
 
     syntax = ["cl n", "cl adv n", "cl adj n"]
     if syntax_type == "num":
@@ -36,14 +36,20 @@ if __name__ == "__main__":
         syntax = ["dem " + s for s in syntax]
     elif syntax_type == "det":
         syntax = ["det " + s for s in syntax]
-    # TODO: Admit syntax of the form cl v:pro (or other non-n endings), cl num, accounting for adv/adj in the middle. Use regex.
+    elif syntax_type == "not_noun_all":
+        # POS_tags = ['pro:per', 'v:aux', 'conj', 'co', 'prep', 'n:relat', 'v:cop', 'pro:dem', 'v:resc', 'L2', 'pro:wh', 'v:dirc', 'n:fam', 'post', 'chi', 'v', 'adv', 'n:prop', 'poss', 'asp', 'det', 'adv:wh', 'adj', 'cl', 'num', 'n', 'on', 'cleft', 'sfp', 'nom', 'co:int']
+        syntax = ["cl (?!(?:adj|adv))[^n][a-z:]*", "cl adv [^n][a-z:]*", "cl adj [^n][a-z:]*"]
 
     getter.main(collection, language)
 
-    data_cl, homophony_counter = counter.main(collection, language, syntax, want_children)
+    data_cl, homophony_counter, unresolved = counter.main(collection, language, syntax, want_children)
 
     path = handle_output_path(collection, language, want_children, syntax_type)
 
+    # print(unresolved)
     data_cl.to_csv(path + "_cl.csv")
     with open(path + ".json", 'w') as outfile:
         json.dump(homophony_counter, outfile, ensure_ascii=False, indent=4, sort_keys=True)
+    with open(path + "_fail.txt", 'w') as outfile:
+        unresolved = [item.to_string() for item in unresolved]
+        outfile.write("\n\n".join(unresolved))

@@ -1,4 +1,5 @@
-noun_regular: ["cl n", "cl adv n", "cl adj n"]
+noun_all: ["cl n", "cl adv n", "cl adj n"]
 num: noun_regular with "num " prepended
 dem: noun_regular with "dem " prepended
 det: noun_regular with "det " prepended
+not_noun_all: ["cl x", "cl adv x", "cl adj x"], where x is not "n".

@@ -1,4 +1,5 @@
 import childespy as cpy
+from numpy.core.numeric import indices
 import pandas as pd 
 import os
 
@@ -40,13 +41,23 @@ def is_exception(s, collection, language):
     """
     return s in EXCEPTIONS[collection][language]
 
-def get_cl_indices(POS):
+def get_cl_indices(POS, syntax):
     """ Return the indices of all classifiers in POS
     """
-    return [i for i in range(len(POS))
-            if (len(POS) > i + 1) and POS[i] == "cl" and POS[i + 1] == "n"
-            or (len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adv" and POS[i + 2] == "n"
-            or (len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adj" and POS[i + 2] == "n"]
+    noun_syntax = False if "[^n]" in syntax[0] else True
+
+    if noun_syntax:
+        indicies = [i for i in range(len(POS))
+                    if (len(POS) > i + 1) and POS[i] == "cl" and POS[i + 1] == "n"
+                    or (len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adv" and POS[i + 2] == "n"
+                    or (len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adj" and POS[i + 2] == "n"]
+    else:
+        indicies = [i for i in range(len(POS))
+                    if (len(POS) > i + 1) and POS[i] == "cl"
+                    or (len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adv"
+                    or (len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adj"]
+
+    return indicies
 
 def update_homophony_counter(counter, noun_phone, noun_symbol, classifier_phone):
     """ Update the homophony counter of the form
@@ -60,7 +71,7 @@ def update_homophony_counter(counter, noun_phone, noun_symbol, classifier_phone)
         counter[noun_phone][noun_symbol][classifier_phone] = 0
     counter[noun_phone][noun_symbol][classifier_phone] += 1
 
-def count_classifier_homophony(data):
+def count_classifier_homophony(data, syntax):
     """ If classifiers are a system of communicative efficiency, then we expect
     nouns x_1 and x_2, with phonology y, to more often than not have different
     classifiers z_1 and z_2. 
@@ -71,11 +82,12 @@ def count_classifier_homophony(data):
     counter = {}
     cl_phone_symbol_map = {}
     incongruent_list = []
+    unresolved = []
 
     # Handle congruent cases, where we can directly index the classifier, and save incongruency for later
     for index, row in data.iterrows():
         POS = row["part_of_speech"].split()
-        cl_indicies = get_cl_indices(POS)
+        cl_indicies = get_cl_indices(POS, syntax)
         
         for i in cl_indicies:
             try:
@@ -89,7 +101,7 @@ def count_classifier_homophony(data):
                     incongruent_list.append(index)
                     continue
             except IndexError:
-                print(row)
+                unresolved.append(row)
                 continue
             
             # Update classifier phone to symbol map
@@ -104,7 +116,7 @@ def count_classifier_homophony(data):
     for index, row in data.iterrows():
         if index in incongruent_list:
             POS = row["part_of_speech"].split()
-            cl_indicies = get_cl_indices(POS)
+            cl_indicies = get_cl_indices(POS, syntax)
             
             for i in cl_indicies:
                 noun_offset = 2 if (POS[i + 1] == "adv" or POS[i + 1] == "adj") else 1
@@ -114,7 +126,7 @@ def count_classifier_homophony(data):
                 if classifier_phone in cl_phone_symbol_map:
                     cl_symbols = cl_phone_symbol_map[classifier_phone]
                 else:
-                    print(row)
+                    unresolved.append(row)
                     continue
 
                 # TODO: Instead of iterating by index from 0...n, try a oscillating algorithm? 
@@ -132,14 +144,14 @@ def count_classifier_homophony(data):
                 if cl_symbol_index:
                     noun_symbol = row["gloss"].split()[cl_symbol_index + noun_offset]  # Possible noun_offset still buggy due to 'adv'. 
                 else:
-                    print(row)
+                    unresolved.append(row)
                     continue
 
                 incongruent_list.remove(index)
                 # TODO: Store row information, if necessary, instead of counts
                 update_homophony_counter(counter, noun_phone, noun_symbol, classifier_phone)
     
-    return counter
+    return counter, unresolved
 
 
 def main(collection, language, syntax, want_children):
@@ -152,4 +164,5 @@ def main(collection, language, syntax, want_children):
             data = gather_utterances(data, syntax, want_children)
             data_cl = data_cl.append(data, ignore_index=True)
 
-    return data_cl, count_classifier_homophony(data_cl)
+    counter, unresolved = count_classifier_homophony(data_cl, syntax)
+    return data_cl, counter, unresolved
