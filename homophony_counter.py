@@ -41,23 +41,25 @@ def is_exception(s, collection, language):
     """
     return s in EXCEPTIONS[collection][language]
 
-def get_cl_indices(POS, syntax):
+def get_cl_indices(POS, syntax_type):
     """ Return the indices of all classifiers in POS
     """
-    noun_syntax = False if "[^n]" in syntax[0] else True
+    is_noun_index = lambda i: (((len(POS) > i + 1) and POS[i] == "cl" and POS[i + 1] == "n")
+                            or ((len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adv" and POS[i + 2] == "n")
+                            or ((len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adj" and POS[i + 2] == "n"))
 
-    if noun_syntax:
-        indicies = [i for i in range(len(POS))
-                    if (len(POS) > i + 1) and POS[i] == "cl" and POS[i + 1] == "n"
-                    or (len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adv" and POS[i + 2] == "n"
-                    or (len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adj" and POS[i + 2] == "n"]
+    is_not_noun_index = lambda i: (((len(POS) > i + 1) and POS[i] == "cl")
+                                or ((len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adv")
+                                or ((len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adj"))
+
+    if syntax_type == "all":
+        indices = [i for i in range(len(POS)) if is_noun_index(i) or is_not_noun_index(i)] 
+    elif syntax_type == "not_noun":
+        indices = [i for i in range(len(POS)) if is_not_noun_index(i)] 
     else:
-        indicies = [i for i in range(len(POS))
-                    if (len(POS) > i + 1) and POS[i] == "cl"
-                    or (len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adv"
-                    or (len(POS) > i + 2) and POS[i] == "cl" and POS[i + 1] == "adj"]
+        indices = [i for i in range(len(POS)) if is_noun_index(i)] 
 
-    return indicies
+    return indices
 
 def update_homophony_counter(counter, noun_phone, noun_symbol, classifier_phone):
     """ Update the homophony counter of the form
@@ -71,7 +73,7 @@ def update_homophony_counter(counter, noun_phone, noun_symbol, classifier_phone)
         counter[noun_phone][noun_symbol][classifier_phone] = 0
     counter[noun_phone][noun_symbol][classifier_phone] += 1
 
-def count_classifier_homophony(data, syntax):
+def count_classifier_homophony(data, syntax_type):
     """ If classifiers are a system of communicative efficiency, then we expect
     nouns x_1 and x_2, with phonology y, to more often than not have different
     classifiers z_1 and z_2. 
@@ -87,9 +89,9 @@ def count_classifier_homophony(data, syntax):
     # Handle congruent cases, where we can directly index the classifier, and save incongruency for later
     for index, row in data.iterrows():
         POS = row["part_of_speech"].split()
-        cl_indicies = get_cl_indices(POS, syntax)
+        cl_indices = get_cl_indices(POS, syntax_type)
         
-        for i in cl_indicies:
+        for i in cl_indices:
             try:
                 if len(row["gloss"].split()) == len(row["stem"].split()): 
                     noun_offset = 2 if (POS[i + 1] == "adv" or POS[i + 1] == "adj") else 1
@@ -116,9 +118,9 @@ def count_classifier_homophony(data, syntax):
     for index, row in data.iterrows():
         if index in incongruent_list:
             POS = row["part_of_speech"].split()
-            cl_indicies = get_cl_indices(POS, syntax)
+            cl_indices = get_cl_indices(POS, syntax_type)
             
-            for i in cl_indicies:
+            for i in cl_indices:
                 try:
                     noun_offset = 2 if (POS[i + 1] == "adv" or POS[i + 1] == "adj") else 1
                     noun_phone = row["stem"].split()[i + noun_offset]
@@ -162,7 +164,7 @@ def count_classifier_homophony(data, syntax):
     return counter, unresolved
 
 
-def main(collection, language, syntax, want_children):
+def main(collection, language, syntax, syntax_type, want_children):
     path = "./corpora/{}/{}/".format(collection, language)
 
     data_cl = pd.DataFrame(columns=['id', 'gloss', 'stem', 'corpus_name', 'part_of_speech', 'speaker_code', 'collection_name'])
@@ -172,5 +174,5 @@ def main(collection, language, syntax, want_children):
             data = gather_utterances(data, syntax, want_children)
             data_cl = data_cl.append(data, ignore_index=True)
 
-    counter, unresolved = count_classifier_homophony(data_cl, syntax)
+    counter, unresolved = count_classifier_homophony(data_cl, syntax_type)
     return data_cl, counter, unresolved

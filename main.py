@@ -10,15 +10,17 @@ def get_syntax(syntax_type):
     """ Return the syntax specification 
     """
     syntax = ["cl n", "cl adv n", "cl adj n"]
-    if syntax_type == "num":
+    if syntax_type == "num_noun":
         syntax = ["num " + s for s in syntax]
-    elif syntax_type == "dem":
+    elif syntax_type == "dem_noun":
         syntax = ["dem " + s for s in syntax]
-    elif syntax_type == "det":
+    elif syntax_type == "det_noun":
         syntax = ["det " + s for s in syntax]
-    elif syntax_type == "not_noun_all":
+    elif syntax_type == "not_noun":
         # POS_tags = ['pro:per', 'v:aux', 'conj', 'co', 'prep', 'n:relat', 'v:cop', 'pro:dem', 'v:resc', 'L2', 'pro:wh', 'v:dirc', 'n:fam', 'post', 'chi', 'v', 'adv', 'n:prop', 'poss', 'asp', 'det', 'adv:wh', 'adj', 'cl', 'num', 'n', 'on', 'cleft', 'sfp', 'nom', 'co:int']
         syntax = ["cl (?!(?:adj|adv))[^n][a-z:]*", "cl adv [^n][a-z:]*", "cl adj [^n][a-z:]*"]
+    elif syntax_type == "all":
+        syntax += ["cl (?!(?:adj|adv))[^n][a-z:]*", "cl adv [^n][a-z:]*", "cl adj [^n][a-z:]*"]
     return syntax
 
 def handle_output_path(collection, language, want_children, syntax_type):
@@ -42,7 +44,7 @@ if __name__ == "__main__":
     parser.add_argument(dest='collection', nargs='?', default='Chinese')
     parser.add_argument(dest='language', nargs='?', default='Mandarin')
     parser.add_argument(dest='want_children', nargs='?', default='no')
-    parser.add_argument(dest='syntax_type', nargs='?', default='noun_all')
+    parser.add_argument(dest='syntax_type', nargs='?', default='noun')
     args = parser.parse_args()
 
     collection = args.collection
@@ -50,11 +52,10 @@ if __name__ == "__main__":
     want_children = False if args.want_children == 'no' else True
     syntax_type = args.syntax_type
 
-    syntax = get_syntax(syntax_type)
-
     getter.main(collection, language)
 
-    data_cl, homophony_counter, unresolved = counter.main(collection, language, syntax, want_children)
+    syntax = get_syntax(syntax_type)
+    data_cl, homophony_counter, unresolved = counter.main(collection, language, syntax, syntax_type, want_children)
 
     path = handle_output_path(collection, language, want_children, syntax_type)
 
