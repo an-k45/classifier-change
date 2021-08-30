@@ -2,6 +2,7 @@ import argparse
 import pandas as pd
 import json
 import os
+import sys
 
 import get_csvs as getter
 import homophony_counter as counter
@@ -41,15 +42,22 @@ def handle_output_path(collection, language, want_children, syntax_type):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(dest='collection', nargs='?', default='Chinese')
-    parser.add_argument(dest='language', nargs='?', default='Mandarin')
-    parser.add_argument(dest='want_children', nargs='?', default='no')
-    parser.add_argument(dest='syntax_type', nargs='?', default='noun')
+    parser.add_argument("-c", "--collection", help="collection name")
+    parser.add_argument("-l", "--language", help="language name")
+    parser.add_argument("-ch", "--want_children", help="y if child, n if adult")
+    parser.add_argument("-s", "--syntax_type", help="syntax: all, noun, dem_noun, det_noun, num_noun, not_noun")
     args = parser.parse_args()
+    
+    if not args.collection or not args.language or not args.want_children or not args.syntax_type:
+        parser.print_help()
+        sys.exit()
+
+    print("=== RUNNING CLASSIFIER ===")
+    print("ARGUMENTS: {}, {}, {}, {}".format(args.collection, args.language, args.want_children, args.syntax_type))
 
     collection = args.collection
     language = args.language
-    want_children = False if args.want_children == 'no' else True
+    want_children = False if args.want_children == 'n' else True
     syntax_type = args.syntax_type
 
     getter.main(collection, language)
