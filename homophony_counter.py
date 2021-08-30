@@ -167,10 +167,10 @@ def count_classifier_homophony(data, syntax_type):
 def main(collection, language, syntax, syntax_type, want_children):
     path = "./corpora/{}/{}/".format(collection, language)
 
-    data_cl = pd.DataFrame(columns=['id', 'gloss', 'stem', 'corpus_name', 'part_of_speech', 'speaker_code', 'collection_name'])
+    data_cl = pd.DataFrame(columns=['id', 'gloss', 'stem', 'corpus_name', 'part_of_speech', 'speaker_code', 'target_child_age', 'collection_name'])
     for file in os.listdir(path):
         if file.endswith('.csv'):
-            data = pd.read_csv(path + file).filter(items=['id', 'gloss', 'stem', 'corpus_name', 'part_of_speech', 'speaker_code', 'collection_name'], axis=1)
+            data = pd.read_csv(path + file).filter(items=['id', 'gloss', 'stem', 'corpus_name', 'part_of_speech', 'speaker_code', 'target_child_age', 'collection_name'], axis=1)
             data = gather_utterances(data, syntax, want_children)
             data_cl = data_cl.append(data, ignore_index=True)
 
