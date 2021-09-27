@@ -3,8 +3,7 @@ corpora/*
 
 # Output
 output/main/*
-!output/main/syntax_guide.txt
-output/noun_two_plus/*
+output/hom_two_plus/*
 output/cl_two_plus/*
 
 # Settings
