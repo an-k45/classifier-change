@@ -41,7 +41,7 @@ def handle_output_path(collection, language, want_children, syntax_type):
     if syntax_type not in os.listdir("./output/main" + corpora_type):
         os.mkdir("./output/main/" + corpora_type + "/" + syntax_type)
     
-    return "./output/{}/{}/{}_{}".format(corpora_type, syntax_type, collection, language)
+    return "./output/main/{}/{}/{}_{}".format(corpora_type, syntax_type, collection, language)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
