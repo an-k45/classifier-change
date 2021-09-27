@@ -1,9 +1,14 @@
-# Input and output
+# Input 
 corpora/*
-output/*
-!output/syntax_guide.txt
+
+# Output
+output/main/*
+!output/main/syntax_guide.txt
+output/noun_two_plus/*
+output/cl_two_plus/*
 
 # Settings
 __pycache__
 
 # Misc files
+output.zip

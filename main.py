@@ -32,11 +32,14 @@ def handle_output_path(collection, language, want_children, syntax_type):
     if "output" not in os.listdir("./"):
         os.mkdir("./output")
 
-    if corpora_type not in os.listdir("./output"):
-        os.mkdir("./output/" + corpora_type)
+    if "main" not in os.listdir("./output"):
+        os.mkdir("./output/main")
 
-    if syntax_type not in os.listdir("./output/" + corpora_type):
-        os.mkdir("./output/" + corpora_type + "/" + syntax_type)
+    if corpora_type not in os.listdir("./output/main"):
+        os.mkdir("./output/main/" + corpora_type)
+
+    if syntax_type not in os.listdir("./output/main" + corpora_type):
+        os.mkdir("./output/main/" + corpora_type + "/" + syntax_type)
     
     return "./output/{}/{}/{}_{}".format(corpora_type, syntax_type, collection, language)
 
