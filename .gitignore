@@ -1,13 +1,13 @@
 # Input 
-corpora/*
+PT1_EMPIRICAL/corpora/*
 
 # Output
-output/main/*
-output/hom_two_plus/*
-output/cl_two_plus/*
+PT1_EMPIRICAL/output/main/*
+PT1_EMPIRICAL/output/hom_two_plus/*
+PT1_EMPIRICAL/output/cl_two_plus/*
 
 # Settings
 __pycache__
 
 # Misc files
-output.zip
+PT1_EMPIRICAL/output.zip
