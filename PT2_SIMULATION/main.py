@@ -29,10 +29,11 @@ class Adult(object):
         return np.squeeze(min_idxs)
 
 class Lexicon(object):
-    def __init__(self, V, C, F, lex_dist_type):
+    def __init__(self, V, C, F, G, lex_dist_type):
         self.V = V  # no. nouns in lexicon
         self.C = C  # no. classifiers in lexicon
         self.F = F  # no. features in lexicon
+        self.G = G  # max no. features on a noun
         
         self.lexicon_dist = self.init_lexicon_dist(lex_dist_type)
         self.nouns = self.init_nouns()
@@ -47,10 +48,9 @@ class Lexicon(object):
             return self.normalize(np.ones(self.V))
 
     def init_nouns(self):
-        # Limit a noun to up to 3 features for now. 
         nouns = np.zeros((self.V, self.F))
         for i in range(self.V): # TODO: numpy-ify this
-            nouns[i][np.random.choice(self.F, 3)] = 1
+            nouns[i][np.random.choice(self.F, self.G)] = 1
         return nouns 
 
     def get_random_noun_idxs(self, J):
@@ -63,7 +63,7 @@ class Lexicon(object):
 
 
 class Simulation(object):
-    def __init__(self, S, N, K, V, C, F, I, J, productive, lex_dist_type, classifier_init):
+    def __init__(self, S, N, K, V, C, F, G, I, J, productive, lex_dist_type, classifier_init):
         """ Create feature sets, a set of nouns, and the initial generation.
 
         1. Setup
@@ -86,6 +86,7 @@ class Simulation(object):
         self.V = V  # no. nouns in lexicon
         self.C = C  # no. classifiers in lexicon
         self.F = F  # no. features in lexicon
+        self.G = G  # max no. features on a noun
 
         self.I = I  # no. interactions each adult partakes in
         self.J = J  # no. lexical items drawn per interaction
@@ -94,7 +95,7 @@ class Simulation(object):
         self.lex_dist_type = lex_dist_type  # Dist. type of nouns in lexicon: 'zipf' or 'uniform'
         self.classifier_init = classifier_init  # Initial condition of classifiers: 'identity'
         
-        self.lexicon = Lexicon(self.V, self.C, self.F, self.lex_dist_type)
+        self.lexicon = Lexicon(self.V, self.C, self.F, self.G, self.lex_dist_type)
         self.children = self.init_children()
         self.adults = self.init_adults()
         self.init_start_state()
@@ -182,3 +183,10 @@ class Simulation(object):
                             else:
                                 cl_idx = np.random.choice(cl_idxs)
                             self.children[t].add_interaction(cl_idx, noun_idx)
+
+def main():
+    Simulation(S=500, N=100, K=25, V=1000, C=25, F=25, G=3, I=5, J=5, productive='TP', lex_dist_type='zipf', classifier_init='identity')
+    # Simulation(S=500, N=100, K=25, V=1000, C=25, F=25, G=3, I=5, J=5, productive='majority', lex_dist_type='zipf', classifier_init='identity')
+
+if __name__ == "__main__":
+    main()
