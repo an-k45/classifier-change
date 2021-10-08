@@ -63,7 +63,7 @@ class Lexicon(object):
 
 
 class Simulation(object):
-    def __init__(self, N, K, V, C, F, I, J, productive, lex_dist_type, classifier_init):
+    def __init__(self, S, N, K, V, C, F, I, J, productive, lex_dist_type, classifier_init):
         """ Create feature sets, a set of nouns, and the initial generation.
 
         1. Setup
@@ -78,6 +78,8 @@ class Simulation(object):
         * Implement both uniform and Zipfian options
         ** Let's try TP and some kind of simple majority wins
         """
+        self.S = S  # no. total iterations in simulation
+
         self.N = N  # no. total individuals
         self.K = K  # no. children
 
@@ -96,6 +98,8 @@ class Simulation(object):
         self.children = self.init_children()
         self.adults = self.init_adults()
         self.init_start_state()
+
+        self.simulate()
     
     def init_productive_classifiers(self):
         if self.classifier_init == "identity":
@@ -116,31 +120,65 @@ class Simulation(object):
         return arr
     
     def init_start_state(self):
-        for k in tqdm(reversed(range(self.K))):
-            for a in range(self.N - self.K):
-                targets = np.random.choice(self.K, self.I)
+        for k in tqdm(reversed(range(self.K))):  # Oldest to yonugest children
+            for a in range(self.N - self.K):  # Adults
+                targets = np.random.choice(self.K, self.I)  # Choose target interactions
                 targets = targets[np.where(targets >= k)]
                 for t in targets:
-                    # TODO: Select a noun via dist
-                    noun_idxs = self.lexicon.get_random_noun_idxs(self.J)
-                    for noun_idx in noun_idxs:
-                        cl_idx = np.random.choice(self.adults[a].get_pairable_classifiers_idxs(noun_idx))
-                        self.children[t].add_interaction(cl_idx, noun_idx)
-                        
+                    noun_idxs = self.lexicon.get_random_noun_idxs(self.J)  
+                    for noun_idx in noun_idxs:  # Run interaction
+                        cl_idxs = self.adults[a].get_pairable_classifiers_idxs(noun_idx)
+                        if cl_idxs.size > 0:
+                            if cl_idxs.size == 1:
+                                cl_idx = cl_idxs
+                            else:
+                                cl_idx = np.random.choice(cl_idxs)
+                            self.children[t].add_interaction(cl_idx, noun_idx)
 
-    def simulate():
-        # n individuals sorted by age (say, 100 or 1000?)
-        # k youngest are still learning (k for kid)
-        # The language has a vocab size v
-        # Each individual has their own grammar for these v items
-        # Vocab items follow a Zipfian frequency distribution <-- but we could vary it
-        # At every iteration,
-        #    oldest individual "dies" and is removed from the set
-        #    a new youngest individual is added
-        #    Interaction takes place
-        #    Everyone has i interactions with others 
-        #         say 100 or 1000?
-        #         At each interaction j vocab items are drawn from their frequency distribution
-        #              The youngest k learn from these interactions and update their representations
-        pass
+    def adultify(self, child):
+        counts = np.tile(child.classifier_count, (self.F, 1))
+        if self.productive == 'majority':
+            productivity = np.where(child.classifier_features >= counts / 2, 1, 0)
+            return Adult(self.lexicon, self.C, self.F, productivity)
+        elif self.productive == 'TP':
+            exceptions = counts - child.classifier_features
+            tolerance = counts / np.log(counts)
+            productivity = np.where(exceptions <= tolerance, 1, 0)
+            return Adult(self.lexicon, self.C, self.F, productivity)                    
 
+    def simulate(self):
+        """
+        n individuals sorted by age (say, 100 or 1000?)
+        k youngest are still learning (k for kid)
+        The language has a vocab size v
+        Each individual has their own grammar for these v items
+        Vocab items follow a Zipfian frequency distribution <-- but we could vary it
+        At every iteration,
+           oldest individual "dies" and is removed from the set
+           a new youngest individual is added
+           Interaction takes place
+           Everyone has i interactions with others 
+                say 100 or 1000?
+                At each interaction j vocab items are drawn from their frequency distribution
+                     The youngest k learn from these interactions and update their representations
+        """
+        for s in range(self.S):
+            cl_f = np.sum(self.adults[0].classifier_state, axis=1)
+            print("ITER{} -- MIN: {}, MAX: {}, MEAN: {}".format(s, np.min(cl_f), np.max(cl_f), np.mean(cl_f)))
+
+            self.adults.pop()
+            self.adults.insert(0, self.adultify(self.children.pop()))
+            self.children.insert(0, Child(self.lexicon, self.C, self.F))
+
+            for a in range(self.N - self.K):  # Adults
+                targets = np.random.choice(self.K, self.I)  # Choose target interactions
+                for t in targets:
+                    noun_idxs = self.lexicon.get_random_noun_idxs(self.J)  
+                    for noun_idx in noun_idxs:  # Run interaction
+                        cl_idxs = self.adults[a].get_pairable_classifiers_idxs(noun_idx)
+                        if cl_idxs.size > 0:
+                            if cl_idxs.size == 1:
+                                cl_idx = cl_idxs
+                            else:
+                                cl_idx = np.random.choice(cl_idxs)
+                            self.children[t].add_interaction(cl_idx, noun_idx)
