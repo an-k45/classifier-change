@@ -63,7 +63,7 @@ class Lexicon(object):
 
 
 class Simulation(object):
-    def __init__(self, S, N, K, V, C, F, G, I, J, productive, lex_dist_type, classifier_init):
+    def __init__(self, S, N, K, V, C, F, G, H, I, J, productive, lex_dist_type, classifier_init):
         """ Create feature sets, a set of nouns, and the initial generation.
 
         1. Setup
@@ -87,6 +87,7 @@ class Simulation(object):
         self.C = C  # no. classifiers in lexicon
         self.F = F  # no. features in lexicon
         self.G = G  # max no. features on a noun
+        self.H = H  # max no. features on a classifier
 
         self.I = I  # no. interactions each adult partakes in
         self.J = J  # no. lexical items drawn per interaction
@@ -106,6 +107,15 @@ class Simulation(object):
         if self.classifier_init == "identity":
             assert self.C == self.F
             return np.identity(self.C)
+        elif self.classifier_init == "random":
+            arr = np.array([0] * (self.F - self.H) + [1] * self.H)
+            M = np.tile(arr, (self.C,1))
+
+            x, y = M.shape
+            rows = np.indices((x,y))[0]
+            cols = [np.random.permutation(y) for _ in range(x)]
+            return M[rows, cols]
+            # return np.random.choice([0, 1], size=(self.C, self.F))
 
     def init_children(self):
         arr = []
@@ -185,8 +195,8 @@ class Simulation(object):
                             self.children[t].add_interaction(cl_idx, noun_idx)
 
 def main():
-    Simulation(S=500, N=100, K=25, V=1000, C=25, F=25, G=3, I=5, J=5, productive='TP', lex_dist_type='zipf', classifier_init='identity')
-    # Simulation(S=500, N=100, K=25, V=1000, C=25, F=25, G=3, I=5, J=5, productive='majority', lex_dist_type='zipf', classifier_init='identity')
+    Simulation(S=500, N=100, K=25, V=1000, C=25, F=25, G=3, H=2, I=5, J=5, productive='TP', lex_dist_type='zipf', classifier_init='random')
+    # Simulation(S=500, N=100, K=25, V=1000, C=25, F=25, G=3, H=2, I=5, J=5, productive='majority', lex_dist_type='zipf', classifier_init='identity')
 
 if __name__ == "__main__":
     main()
