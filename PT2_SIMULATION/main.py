@@ -29,11 +29,12 @@ class Adult(object):
         return np.squeeze(min_idxs)
 
 class Lexicon(object):
-    def __init__(self, V, C, F, G, lex_dist_type):
+    def __init__(self, V, C, F, G, lex_dist_type, feature_hierarchy):
         self.V = V  # no. nouns in lexicon
         self.C = C  # no. classifiers in lexicon
         self.F = F  # no. features in lexicon
         self.G = G  # max no. features on a noun
+        self.feature_hierarchy = feature_hierarchy
         
         self.lexicon_dist = self.init_lexicon_dist(lex_dist_type)
         self.nouns = self.init_nouns()
@@ -49,8 +50,18 @@ class Lexicon(object):
 
     def init_nouns(self):
         nouns = np.zeros((self.V, self.F))
-        for i in range(self.V): # TODO: numpy-ify this
-            nouns[i][np.random.choice(self.F, self.G)] = 1
+        # TODO: numpy-ify this
+        if self.feature_hierarchy is None:
+            for i in range(self.V): 
+                nouns[i][np.random.choice(self.F, self.G)] = 1
+        else:
+            for i in range(self.V):
+                v = np.zeros(self.F)
+                num_feats = np.random.choice(np.arange(1, self.G))
+                target_feats = np.random.choice(self.F, num_feats)
+                for t in target_feats:
+                    v[self.feature_hierarchy.get_features(t)] = 1
+                nouns[i] += v
         return nouns 
 
     def get_random_noun_idxs(self, J):
@@ -61,23 +72,52 @@ class Lexicon(object):
     def get_noun(self, i):
         return self.nouns[i]
 
+class FeatureHierarchy(object):
+    def __init__(self, F, B, feature_init):
+        self.F = F  # no. features in lexicon
+        self.B = B  # max branching factor on feature hierarchy
+        self.feature_init = feature_init  # 'fixed', 'variable'
+
+        self.feature_tree_ref = self.build_tree()
+    
+    def build_tree(self):
+        tree_ref = {0: None}
+        feats = list(range(self.F))
+        stack = [feats.pop(0)]
+
+        while len(stack) > 0:
+            cur_parent = stack.pop(0)
+
+            if len(feats) < self.B:
+                children = feats
+                break
+            elif self.feature_init == 'fixed':
+                children = feats[:self.B]
+                feats = feats[self.B:]
+            else:  # variable
+                i = np.random.choice(np.arange(1, self.B))
+                children = feats[:i]
+                feats = feats[i:]
+
+            for c in children:
+                tree_ref[c] = cur_parent
+                stack.append(c)
+        
+        return tree_ref
+
+    def get_features(self, feat):
+        """ Given a feature return itself and all its ancestors
+        """
+        # print(self.feature_tree_ref)
+        feats = []
+        cur_feat = feat
+        while cur_feat is not None:
+            feats.append(cur_feat)
+            cur_feat = self.feature_tree_ref[cur_feat]
+        return np.array(feats)
 
 class Simulation(object):
-    def __init__(self, S, N, K, V, C, F, G, H, I, J, productive, lex_dist_type, classifier_init):
-        """ Create feature sets, a set of nouns, and the initial generation.
-
-        1. Setup
-        1a. Devise sets of features, such that each feature has a set of subfeatures, to a finite depth.
-        1b. Randomly(?) construct a large set of nouns with random(subject to some constraints?) features
-        1c. Define GEN1 to consist of adults for whom all classifiers are productive. 
-            Adults 'speak' by selecting any noun with equal probability*, 
-            and selecting from valid classifiers with equal probability*.
-        1d. Define GEN1 to consist of children who are pending input to determine 
-            which classifiers are productive as per an acquisition model**.
-
-        * Implement both uniform and Zipfian options
-        ** Let's try TP and some kind of simple majority wins
-        """
+    def __init__(self, S, N, K, V, C, F, G, H, B, I, J, productive, lex_dist_type, classifier_init, feature_init):
         self.S = S  # no. total iterations in simulation
 
         self.N = N  # no. total individuals
@@ -86,17 +126,21 @@ class Simulation(object):
         self.V = V  # no. nouns in lexicon
         self.C = C  # no. classifiers in lexicon
         self.F = F  # no. features in lexicon
+
         self.G = G  # max no. features on a noun
         self.H = H  # max no. features on a classifier
+        self.B = B  # max branching factor on feature hierarchy
 
         self.I = I  # no. interactions each adult partakes in
         self.J = J  # no. lexical items drawn per interaction
 
         self.productive = productive  # method for productivity: 'TP' or 'majority'
         self.lex_dist_type = lex_dist_type  # Dist. type of nouns in lexicon: 'zipf' or 'uniform'
-        self.classifier_init = classifier_init  # Initial condition of classifiers: 'identity'
+        self.classifier_init = classifier_init  # 'identity', 'random', ['hierarchy', 'single'/'multiple']
+        self.feature_init = feature_init  # 'fixed', 'variable', None
         
-        self.lexicon = Lexicon(self.V, self.C, self.F, self.G, self.lex_dist_type)
+        self.feature_hierarchy = FeatureHierarchy(self.F, self.B, self.feature_init) if self.classifier_init[0] == 'hierarchy' else None
+        self.lexicon = Lexicon(self.V, self.C, self.F, self.G, self.lex_dist_type, self.feature_hierarchy)
         self.children = self.init_children()
         self.adults = self.init_adults()
         self.init_start_state()
@@ -116,6 +160,25 @@ class Simulation(object):
             cols = [np.random.permutation(y) for _ in range(x)]
             return M[rows, cols]
             # return np.random.choice([0, 1], size=(self.C, self.F))
+        elif self.classifier_init[0] == "hierarchy":
+            M = np.zeros((self.C, self.F))
+            
+            v_0 = np.zeros(self.F)
+            v_0[0] = 1  # ge4
+            M[0] += v_0
+
+            for i in range(1, self.C):
+                v = np.zeros(self.F)
+                if self.classifier_init[1] == "single":
+                    v[self.feature_hierarchy.get_features(i)] = 1
+                else:  # "multiple"
+                    num_feats = np.random.choice(np.arange(1, self.H))
+                    target_feats = np.random.choice(self.F, num_feats)
+                    for t in target_feats:
+                        v[self.feature_hierarchy.get_features(t)] = 1
+                M[i] += v
+    
+            return M
 
     def init_children(self):
         arr = []
@@ -147,7 +210,7 @@ class Simulation(object):
                             self.children[t].add_interaction(cl_idx, noun_idx)
 
     def adultify(self, child):
-        counts = np.tile(child.classifier_count, (self.F, 1))
+        counts = np.tile(child.classifier_count, (self.F, 1)).T
         if self.productive == 'majority':
             productivity = np.where(child.classifier_features >= counts / 2, 1, 0)
             return Adult(self.lexicon, self.C, self.F, productivity)
@@ -195,7 +258,18 @@ class Simulation(object):
                             self.children[t].add_interaction(cl_idx, noun_idx)
 
 def main():
-    Simulation(S=500, N=100, K=25, V=1000, C=25, F=25, G=3, H=2, I=5, J=5, productive='TP', lex_dist_type='zipf', classifier_init='random')
+    # classifier_init: 'identity', 'random', ['hierarchy', 'single'/'multiple']
+    # feature_init: 'fixed', 'variable', None
+    Simulation(S=500, 
+               N=100, K=25, 
+               V=1000, C=25, F=40, 
+               G=2, H=2, B=3,
+               I=5, J=5, 
+               productive='TP', 
+               lex_dist_type='zipf', 
+               classifier_init=['hierarchy', 'single'],
+               feature_init='fixed'
+    )
     # Simulation(S=500, N=100, K=25, V=1000, C=25, F=25, G=3, H=2, I=5, J=5, productive='majority', lex_dist_type='zipf', classifier_init='identity')
 
 if __name__ == "__main__":
