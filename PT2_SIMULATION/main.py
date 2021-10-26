@@ -136,7 +136,16 @@ class Simulation(object):
 
         self.productive = productive  # method for productivity: 'TP' or 'majority'
         self.lex_dist_type = lex_dist_type  # Dist. type of nouns in lexicon: 'zipf' or 'uniform'
-        self.classifier_init = classifier_init  # 'identity', 'random', ['hierarchy', 'single'/'multiple']
+        # Method for classifier initialzation:
+        # 'identity': Every classifier gets one unique feature
+        # 'random': Random distribution of H features on each classifier
+        # ['heirarchy',: Create a hierarchy of features, from F and B, where
+        #    'single']: classifiers get one feature, including its parents
+        #    'multiple']: classifiers get up to H features, including their parents
+        self.classifier_init = classifier_init
+        # Method for feature hierarchy initialization:
+        # 'fixed': Each feature gets B subfeatures exactly
+        # 'variable': Each feature gets between 1 and B subfeatures randomly
         self.feature_init = feature_init  # 'fixed', 'variable', None
         
         self.feature_hierarchy = FeatureHierarchy(self.F, self.B, self.feature_init) if self.classifier_init[0] == 'hierarchy' else None
