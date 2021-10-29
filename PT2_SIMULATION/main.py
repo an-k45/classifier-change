@@ -277,7 +277,7 @@ def main():
         productive='TP', 
         lex_dist_type='zipf', 
         classifier_init=['hierarchy', 'multiple'],
-        feature_init='fixed'
+        feature_init='fixed'  # NOTE: Variable is broken.
     )
 
     sim.simulate()
