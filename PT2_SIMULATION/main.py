@@ -90,12 +90,14 @@ class FeatureHierarchy(object):
 
             if len(feats) < self.B:
                 children = feats
+                for c in children:
+                    tree_ref[c] = cur_parent
                 break
             elif self.feature_init == 'fixed':
                 children = feats[:self.B]
                 feats = feats[self.B:]
             else:  # variable
-                i = np.random.choice(np.arange(1, self.B))
+                i = np.random.choice(np.arange(1, self.B + 1))
                 children = feats[:i]
                 feats = feats[i:]
 
@@ -276,8 +278,8 @@ def main():
         I=5, J=5, 
         productive='TP', 
         lex_dist_type='zipf', 
-        classifier_init=['hierarchy', 'multiple'],
-        feature_init='fixed'  # NOTE: Variable is broken.
+        classifier_init=['hierarchy', 'single'],
+        feature_init='fixed'
     )
 
     sim.simulate()
