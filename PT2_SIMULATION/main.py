@@ -57,7 +57,7 @@ class Lexicon(object):
         else:
             for i in range(self.V):
                 v = np.zeros(self.F)
-                num_feats = np.random.choice(np.arange(1, self.G))
+                num_feats = np.random.choice(np.arange(1, self.G + 1))
                 target_feats = np.random.choice(self.F, num_feats)
                 for t in target_feats:
                     v[self.feature_hierarchy.get_features(t)] = 1
@@ -153,8 +153,6 @@ class Simulation(object):
         self.children = self.init_children()
         self.adults = self.init_adults()
         self.init_start_state()
-
-        self.simulate()
     
     def init_productive_classifiers(self):
         if self.classifier_init == "identity":
@@ -221,13 +219,16 @@ class Simulation(object):
     def adultify(self, child):
         counts = np.tile(child.classifier_count, (self.F, 1)).T
         if self.productive == 'majority':
-            productivity = np.where(child.classifier_features >= counts / 2, 1, 0)
-            return Adult(self.lexicon, self.C, self.F, productivity)
+            productivity = np.where(child.classifier_features >= (counts / 2), 1, 0)
         elif self.productive == 'TP':
             exceptions = counts - child.classifier_features
-            tolerance = counts / np.log(counts)
+            tolerance = np.where(counts > 2, counts / np.log(counts), 0)  # TP breaks down when N <= 2
             productivity = np.where(exceptions <= tolerance, 1, 0)
-            return Adult(self.lexicon, self.C, self.F, productivity)                    
+
+        # Restore classifiers which are not observed as 'dead'. These are otherwise set productive on every feature. 
+        productivity[np.argwhere(child.classifier_count == 0)] = 0
+
+        return Adult(self.lexicon, self.C, self.F, productivity)                    
 
     def simulate(self):
         """
@@ -267,19 +268,19 @@ class Simulation(object):
                             self.children[t].add_interaction(cl_idx, noun_idx)
 
 def main():
-    # classifier_init: 'identity', 'random', ['hierarchy', 'single'/'multiple']
-    # feature_init: 'fixed', 'variable', None
-    Simulation(S=500, 
-               N=100, K=25, 
-               V=1000, C=25, F=40, 
-               G=2, H=2, B=3,
-               I=5, J=5, 
-               productive='TP', 
-               lex_dist_type='zipf', 
-               classifier_init=['hierarchy', 'single'],
-               feature_init='fixed'
+    sim = Simulation(
+        S=1000, 
+        N=100, K=25, 
+        V=1000, C=25, F=40, 
+        G=3, H=2, B=3,
+        I=5, J=5, 
+        productive='TP', 
+        lex_dist_type='zipf', 
+        classifier_init=['hierarchy', 'multiple'],
+        feature_init='fixed'
     )
-    # Simulation(S=500, N=100, K=25, V=1000, C=25, F=25, G=3, H=2, I=5, J=5, productive='majority', lex_dist_type='zipf', classifier_init='identity')
+
+    sim.simulate()
 
 if __name__ == "__main__":
     main()
