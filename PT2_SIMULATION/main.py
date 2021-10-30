@@ -181,7 +181,7 @@ class Simulation(object):
                 if self.classifier_init[1] == "single":
                     v[self.feature_hierarchy.get_features(i)] = 1
                 else:  # "multiple"
-                    num_feats = np.random.choice(np.arange(1, self.H))
+                    num_feats = np.random.choice(np.arange(1, self.H + 1))
                     target_feats = np.random.choice(self.F, num_feats)
                     for t in target_feats:
                         v[self.feature_hierarchy.get_features(t)] = 1
