@@ -120,6 +120,7 @@ class FeatureHierarchy(object):
 
 class Simulation(object):
     def __init__(self, S, N, K, V, C, F, G, H, B, I, J, productive, lex_dist_type, classifier_init, feature_init):
+        ### PARAMETERS ### 
         self.S = S  # no. total iterations in simulation
 
         self.N = N  # no. total individuals
@@ -149,12 +150,19 @@ class Simulation(object):
         # 'fixed': Each feature gets B subfeatures exactly
         # 'variable': Each feature gets between 1 and B subfeatures randomly
         self.feature_init = feature_init  # 'fixed', 'variable', None
+        ### === ###
+
+        ### STORAGE ###
+        self.feature_metrics = []  # Store min, avg, max, of classifier features for each new adult
+        ### === ###
         
+        ### SIMULATION INITIALIZATION ###
         self.feature_hierarchy = FeatureHierarchy(self.F, self.B, self.feature_init) if self.classifier_init[0] == 'hierarchy' else None
         self.lexicon = Lexicon(self.V, self.C, self.F, self.G, self.lex_dist_type, self.feature_hierarchy)
         self.children = self.init_children()
         self.adults = self.init_adults()
         self.init_start_state()
+        ### === ###
     
     def init_productive_classifiers(self):
         if self.classifier_init == "identity":
@@ -224,7 +232,7 @@ class Simulation(object):
             productivity = np.where(child.classifier_features >= (counts / 2), 1, 0)
         elif self.productive == 'TP':
             exceptions = counts - child.classifier_features
-            tolerance = np.where(counts > 2, counts / np.log(counts), 0)  # TP breaks down when N <= 2
+            tolerance = np.where(counts > 2, counts / np.log(counts), 0)  # TP breaks down when N <= 2. Also divide by zero stems here, but this is a pre-compute only, so not actually an issue.
             productivity = np.where(exceptions <= tolerance, 1, 0)
 
         # Restore classifiers which are not observed as 'dead'. These are otherwise set productive on every feature. 
@@ -248,9 +256,10 @@ class Simulation(object):
                 At each interaction j vocab items are drawn from their frequency distribution
                      The youngest k learn from these interactions and update their representations
         """
-        for s in range(self.S):
-            cl_f = np.sum(self.adults[0].classifier_state, axis=1)
-            print("ITER{} -- MIN: {}, MAX: {}, MEAN: {}".format(s, np.min(cl_f), np.max(cl_f), np.mean(cl_f)))
+        for s in tqdm(range(self.S)):
+            cl_feats = np.sum(self.adults[0].classifier_state, axis=1)
+            self.feature_metrics.append([np.min(cl_feats), np.max(cl_feats), np.mean(cl_feats)])
+            # print("ITER{} -- MIN: {}, MAX: {}, MEAN: {}".format(s, np.min(cl_feats), np.max(cl_feats), np.mean(cl_feats)))
 
             self.adults.pop()
             self.adults.insert(0, self.adultify(self.children.pop()))
@@ -269,12 +278,19 @@ class Simulation(object):
                                 cl_idx = np.random.choice(cl_idxs)
                             self.children[t].add_interaction(cl_idx, noun_idx)
 
+    def save(self, metric, path, name):
+        """ Save the values of metric to the given file at path
+        """
+        if metric == "feature_metrics":
+            output = np.array(self.feature_metrics)
+        np.savez(path, **{name: output})
+
 def main():
     sim = Simulation(
         S=1000, 
-        N=100, K=25, 
+        N=200, K=40, 
         V=1000, C=25, F=40, 
-        G=3, H=2, B=3,
+        G=4, H=3, B=3,
         I=5, J=5, 
         productive='TP', 
         lex_dist_type='zipf', 
@@ -283,6 +299,7 @@ def main():
     )
 
     sim.simulate()
+    sim.save("feature_metrics", "./output/data/sims/sim0", "sim0")
 
 if __name__ == "__main__":
     main()

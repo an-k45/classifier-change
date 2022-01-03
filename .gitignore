@@ -6,6 +6,8 @@ PT1_EMPIRICAL/output/main/*
 PT1_EMPIRICAL/output/hom_two_plus/*
 PT1_EMPIRICAL/output/cl_two_plus/*
 
+PT2_SIMULATION/output/data/sims/*
+
 # Settings
 __pycache__
 
