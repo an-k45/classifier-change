@@ -331,7 +331,7 @@ if __name__ == "__main__":
     
     parser.add_argument('-V', type=int, default=1000, help="No. nouns in lexicon")
     parser.add_argument('-C', type=int, default=25, help="No. classifiers in lexicon")
-    parser.add_argument('-F', type=int, default=40, help="No. features in lexicon")
+    parser.add_argument('-F', type=int, default=50, help="No. features in lexicon")
 
     parser.add_argument('-G', type=int, default=4, help="Max no. features on a noun")
     parser.add_argument('-H', type=int, default=3, help="Max no. features on a classifier")
