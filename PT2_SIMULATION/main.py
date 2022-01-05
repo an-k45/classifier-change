@@ -1,3 +1,5 @@
+import argparse
+
 import numpy as np
 from tqdm import tqdm
 
@@ -165,10 +167,10 @@ class Simulation(object):
         ### === ###
     
     def init_productive_classifiers(self):
-        if self.classifier_init == "identity":
+        if self.classifier_init == ["identity"]:
             assert self.C == self.F
             return np.identity(self.C)
-        elif self.classifier_init == "random":
+        elif self.classifier_init == ["random"]:
             arr = np.array([0] * (self.F - self.H) + [1] * self.H)
             M = np.tile(arr, (self.C,1))
 
@@ -256,7 +258,7 @@ class Simulation(object):
                 At each interaction j vocab items are drawn from their frequency distribution
                      The youngest k learn from these interactions and update their representations
         """
-        for s in tqdm(range(self.S)):
+        for s in tqdm(range(self.S)):  # Remove tqdm before commenting in print statements below 
             cl_feats = np.sum(self.adults[0].classifier_state, axis=1)
             self.feature_metrics.append([np.min(cl_feats), np.max(cl_feats), np.mean(cl_feats)])
             # print("ITER{} -- MIN: {}, MAX: {}, MEAN: {}".format(s, np.min(cl_feats), np.max(cl_feats), np.mean(cl_feats)))
@@ -285,21 +287,64 @@ class Simulation(object):
             output = np.array(self.feature_metrics)
         np.savez(path, **{name: output})
 
-def main():
+def main(args):
+    print("======================================================")
+    print("Running simulation: " + args.NAME)
+    print("Parameters: " + str(vars(args)))
+
+    # sim = Simulation(
+    #     S=1000, 
+    #     N=200, K=40, 
+    #     V=1000, C=25, F=40, 
+    #     G=4, H=3, B=3,
+    #     I=5, J=5, 
+    #     productive='TP', 
+    #     lex_dist_type='zipf', 
+    #     classifier_init=['hierarchy', 'single'],
+    #     feature_init='fixed'
+    # )
+
     sim = Simulation(
-        S=1000, 
-        N=200, K=40, 
-        V=1000, C=25, F=40, 
-        G=4, H=3, B=3,
-        I=5, J=5, 
-        productive='TP', 
-        lex_dist_type='zipf', 
-        classifier_init=['hierarchy', 'single'],
-        feature_init='fixed'
+        S=args.S, 
+        N=args.N, K=args.K, 
+        V=args.V, C=args.C, F=args.F, 
+        G=args.G, H=args.H, B=args.B,
+        I=args.I, J=args.J, 
+        productive=args.PROD, 
+        lex_dist_type=args.LEX_TYPE, 
+        classifier_init=args.CLASS_INIT,
+        feature_init=args.FEAT_INIT
     )
 
     sim.simulate()
-    sim.save("feature_metrics", "./output/data/sims/sim0", "sim0")
+    sim.save("feature_metrics", "./output/data/sims/" + args.NAME, args.NAME)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--NAME', type=str, required=True, help="Simulation name")
+
+    parser.add_argument('-S', type=int, default=1000, help="No. simulations")
+
+    parser.add_argument('-N', type=int, default=200, help="No. people")
+    parser.add_argument('-K', type=int, default=40, help="No. children")
+    
+    parser.add_argument('-V', type=int, default=1000, help="No. nouns in lexicon")
+    parser.add_argument('-C', type=int, default=25, help="No. classifiers in lexicon")
+    parser.add_argument('-F', type=int, default=40, help="No. features in lexicon")
+
+    parser.add_argument('-G', type=int, default=4, help="Max no. features on a noun")
+    parser.add_argument('-H', type=int, default=3, help="Max no. features on a classifier")
+    parser.add_argument('-B', type=int, default=3, help="Max branching factor on feature hierarchy")
+
+    parser.add_argument('-I', type=int, default=5, help="No. interactions each adult partakes in")
+    parser.add_argument('-J', type=int, default=5, help="No. lexical items drawn per interaction")
+
+    parser.add_argument('--PROD', type=str, default='TP', help="Method for productivity")
+    parser.add_argument('--LEX_TYPE', type=str, default='zipf', help="Dist. type of nouns in lexicon")
+    parser.add_argument('--CLASS_INIT', nargs='+', default=['hierarchy', 'single'], help="Method for classifier initialzation")
+    parser.add_argument('--FEAT_INIT', type=str, default='fixed', help="Method for feature hierarchy initialization")
+    
+    args = parser.parse_args()
+
+    main(args)
