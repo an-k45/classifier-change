@@ -317,7 +317,7 @@ def main(args):
     )
 
     sim.simulate()
-    sim.save("feature_metrics", "./output/data/sims/" + args.NAME, args.NAME)
+    sim.save("feature_metrics", "./output/summary/data/" + args.NAME, args.NAME)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
