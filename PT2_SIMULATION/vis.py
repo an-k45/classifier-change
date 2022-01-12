@@ -1,4 +1,5 @@
 import os
+from tqdm import tqdm
 
 import numpy as np
 import pandas as pd
@@ -23,7 +24,7 @@ def main():
     in_dir = "./output/summary/data"
     out_dir = "./output/summary/graphs"
 
-    for file in os.listdir(in_dir):
+    for file in tqdm(os.listdir(in_dir)):
         if "sim" in file:
             path = os.path.join(in_dir, file)
             graph_path = os.path.join(out_dir, file.split(".")[0] + ".png")
@@ -33,4 +34,5 @@ def main():
             make_graph(smooth_data, graph_path)
 
 if __name__ == "__main__":
+    print("Running visualization for summary data...")
     main()

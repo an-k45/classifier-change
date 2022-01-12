@@ -61,8 +61,11 @@ python3 main.py --NAME sim34 --CLASS_INIT hierarchy multiple -F 100 --FEAT_INIT 
 python3 main.py --NAME sim35 --CLASS_INIT hierarchy multiple -G 2 --FEAT_INIT variable
 python3 main.py --NAME sim36 --CLASS_INIT hierarchy multiple -G 8 --FEAT_INIT variable
 
-python3 main.py --NAME sim37 --CLASS_INIT hierarchy multiple -B 2 --FEAT_INIT variable
-python3 main.py --NAME sim38 --CLASS_INIT hierarchy multiple -B 5 --FEAT_INIT variable
+python3 main.py --NAME sim37 --CLASS_INIT hierarchy multiple -H 2 --FEAT_INIT variable
+python3 main.py --NAME sim38 --CLASS_INIT hierarchy multiple -H 5 --FEAT_INIT variable
+
+python3 main.py --NAME sim39 --CLASS_INIT hierarchy multiple -B 2 --FEAT_INIT variable
+python3 main.py --NAME sim40 --CLASS_INIT hierarchy multiple -B 5 --FEAT_INIT variable
 
 python3 merge.py
 python3 vis.py
