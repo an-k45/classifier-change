@@ -260,7 +260,7 @@ class Simulation(object):
         """
         for s in tqdm(range(self.S)):  # Remove tqdm before commenting in print statements below 
             cl_feats = np.sum(self.adults[0].classifier_state, axis=1)
-            self.feature_metrics.append([np.min(cl_feats), np.max(cl_feats), np.mean(cl_feats)])
+            self.feature_metrics.append([np.max(cl_feats), np.percentile(cl_feats, 75), np.mean(cl_feats), np.percentile(cl_feats, 25), np.min(cl_feats)])
             # print("ITER{} -- MIN: {}, MAX: {}, MEAN: {}".format(s, np.min(cl_feats), np.max(cl_feats), np.mean(cl_feats)))
 
             self.adults.pop()

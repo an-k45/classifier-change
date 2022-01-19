@@ -11,7 +11,7 @@ sns.set()
 def unpack_single_npz(path):
     sim_file = np.load(path)
     sim_data = pd.DataFrame(sim_file[sim_file.files[0]])
-    return sim_data.rename(columns={0: "min", 1: "max", 2: "avg"})
+    return sim_data.rename(columns={0: "max", 1: "75", 2: "avg", 3: "25", 4: "min"})
 
 def smooth_sim_data(sim_data, n):
     return sim_data.rolling(n).sum() / n
