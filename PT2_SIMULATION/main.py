@@ -155,7 +155,8 @@ class Simulation(object):
         ### === ###
 
         ### STORAGE ###
-        self.feature_metrics = []  # Store min, avg, max, of classifier features for each new adult
+        self.feature_metrics = []  # Store min, 25%tile, avg, 75%tile, max, of classifier features for each new adult
+        self.duplicate_counts = []  # Store no. classifiers which are duplicates, column index = # features on classifier, regardless of combination of features (ie. different duplicates for same # features counted together)
         ### === ###
         
         ### SIMULATION INITIALIZATION ###
@@ -259,9 +260,25 @@ class Simulation(object):
                      The youngest k learn from these interactions and update their representations
         """
         for s in tqdm(range(self.S)):  # Remove tqdm before commenting in print statements below 
-            cl_feats = np.sum(self.adults[0].classifier_state, axis=1)
-            self.feature_metrics.append([np.max(cl_feats), np.percentile(cl_feats, 75), np.mean(cl_feats), np.percentile(cl_feats, 25), np.min(cl_feats)])
-            # print("ITER{} -- MIN: {}, MAX: {}, MEAN: {}".format(s, np.min(cl_feats), np.max(cl_feats), np.mean(cl_feats)))
+            cl_state = self.adults[0].classifier_state
+
+            # Information on number of features per classifier
+            cl_num_feats = np.sum(cl_state, axis=1)
+            self.feature_metrics.append([np.max(cl_num_feats), np.percentile(cl_num_feats, 75), np.mean(cl_num_feats), np.percentile(cl_num_feats, 25), np.min(cl_num_feats)])
+            # print("ITER{} -- MIN: {}, MAX: {}, MEAN: {}".format(s, np.min(cl_num_feats), np.max(cl_num_feats), np.mean(cl_num_feats)))
+            
+            # Information on duplicate classifiers 
+            u, indices, counts = np.unique(cl_state, axis=0, return_index=True, return_counts=True)
+            cl_dup_num_feats = np.sum(cl_state[indices], axis=1)
+            dups = np.zeros(self.F + 1)  # +1 for 0 feature case at index 0
+            np.add.at(dups,
+                      cl_dup_num_feats[np.argwhere(counts > 1).flatten()].astype(int),
+                      counts[counts > 1].astype(int))
+            self.duplicate_counts.append(dups)
+            # print("ITER{}\n{}\n{}".format(s, counts, cl_dup_num_feats))
+
+            # with np.printoptions(threshold=np.inf):
+            #     print("ITER{}\n{}".format(s, cl_state))
 
             self.adults.pop()
             self.adults.insert(0, self.adultify(self.children.pop()))

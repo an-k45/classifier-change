@@ -8,6 +8,7 @@ PT1_EMPIRICAL/output/cl_two_plus/*
 
 PT2_SIMULATION/output/summary/data/*
 PT2_SIMULATION/output/summary/graphs/*
+PT2_SIMULATION/output/summary_old
 
 # Settings
 __pycache__
