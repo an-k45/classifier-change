@@ -6,12 +6,13 @@ PT1_EMPIRICAL/output/main/*
 PT1_EMPIRICAL/output/hom_two_plus/*
 PT1_EMPIRICAL/output/cl_two_plus/*
 
-PT2_SIMULATION/output/summary/data/*
-PT2_SIMULATION/output/summary/graphs/*
-PT2_SIMULATION/output/summary_old
+PT2_SIMULATION/output/*/data/*
+PT2_SIMULATION/output/*/graphs/*
 
 # Settings
 __pycache__
 
 # Misc files
 *.zip
+*.npz
+*.png
