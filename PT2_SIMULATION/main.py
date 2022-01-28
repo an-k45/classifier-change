@@ -157,7 +157,7 @@ class Simulation(object):
 
         ### STORAGE ###
         self.feature_metrics = []  # Store min, 25%tile, avg, 75%tile, max, of classifier features for each new adult
-        self.duplicate_counts = []  # Store no. classifiers which are duplicates, column index = # features on classifier, regardless of combination of features (ie. different duplicates for same # features counted together)
+        self.duplicate_classifiers = []  # Store no. classifiers which are duplicates, column index = # features on classifier, regardless of combination of features (ie. different duplicates for same # features counted together)
         ### === ###
         
         ### SIMULATION INITIALIZATION ###
@@ -275,7 +275,7 @@ class Simulation(object):
             np.add.at(dups,
                       cl_dup_num_feats[np.argwhere(counts > 1).flatten()].astype(int),
                       counts[counts > 1].astype(int))
-            self.duplicate_counts.append(dups)
+            self.duplicate_classifiers.append(dups)
             # print("ITER{}\n{}\n{}".format(s, counts, cl_dup_num_feats))
 
             # with np.printoptions(threshold=np.inf):
@@ -305,8 +305,8 @@ class Simulation(object):
 
         if "feature_metrics" in metrics:
             output[name + "_feature_metrics"] = np.array(self.feature_metrics)
-        if "duplicate_counts" in metrics:
-            output[name + "_duplicate_counts"] = np.array(self.duplicate_counts)
+        if "duplicate_classifiers" in metrics:
+            output[name + "_duplicate_classifiers"] = np.array(self.duplicate_classifiers)
 
         np.savez(path, **output)
 
@@ -344,7 +344,7 @@ def main(args):
     out_dir = "./output/{}/data/".format(args.SIMSET)
     os.makedirs(out_dir, exist_ok=True)
 
-    metrics = ["feature_metrics", "duplicate_counts"]
+    metrics = ["feature_metrics", "duplicate_classifiers"]
     sim.save(metrics, out_dir + args.NAME, args.NAME)
 
 if __name__ == "__main__":
