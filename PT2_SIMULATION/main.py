@@ -1,3 +1,4 @@
+import os
 import argparse
 
 import numpy as np
@@ -297,12 +298,17 @@ class Simulation(object):
                                 cl_idx = np.random.choice(cl_idxs)
                             self.children[t].add_interaction(cl_idx, noun_idx)
 
-    def save(self, metric, path, name):
+    def save(self, metrics, path, name):
         """ Save the values of metric to the given file at path
         """
-        if metric == "feature_metrics":
-            output = np.array(self.feature_metrics)
-        np.savez(path, **{name: output})
+        output = {}
+
+        if "feature_metrics" in metrics:
+            output[name + "_feature_metrics"] = np.array(self.feature_metrics)
+        if "duplicate_counts" in metrics:
+            output[name + "_duplicate_counts"] = np.array(self.duplicate_counts)
+
+        np.savez(path, **output)
 
 def main(args):
     print("======================================================")
@@ -334,12 +340,18 @@ def main(args):
     )
 
     sim.simulate()
-    sim.save("feature_metrics", "./output/summary/data/" + args.NAME, args.NAME)
+
+    out_dir = "./output/{}/data/".format(args.SIMSET)
+    os.makedirs(out_dir, exist_ok=True)
+
+    metrics = ["feature_metrics", "duplicate_counts"]
+    sim.save(metrics, out_dir + args.NAME, args.NAME)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--NAME', type=str, required=True, help="Simulation name")
+    parser.add_argument('--SIMSET', type=str, required=True, help="Simulation set name")
 
     parser.add_argument('-S', type=int, default=1000, help="No. simulations")
 
