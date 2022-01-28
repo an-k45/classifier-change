@@ -1,9 +1,10 @@
 import os
-import numpy as np
+import argparse
 
+import numpy as np
 from tqdm import tqdm
 
-def main():
+def main(args):
     dir = "./output/summary/data"
     output = {}
 
@@ -17,4 +18,9 @@ def main():
 
 if __name__ == "__main__":
     print("Running merge...")
-    main()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--SIMSET', type=str, required=True, help="Simulation set name")
+    args = parser.parse_args()
+
+    main(args)
