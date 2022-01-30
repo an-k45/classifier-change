@@ -122,7 +122,8 @@ class FeatureHierarchy(object):
         return np.array(feats)
 
 class Simulation(object):
-    def __init__(self, S, N, K, V, C, F, G, H, B, I, J, productive, lex_dist_type, classifier_init, feature_init):
+    def __init__(self, S, N, K, V, C, F, G, H, B, I, J, A, D, 
+                productive, lex_dist_type, classifier_init, feature_init, classifier_drop):
         ### PARAMETERS ### 
         self.S = S  # no. total iterations in simulation
 
@@ -140,6 +141,9 @@ class Simulation(object):
         self.I = I  # no. interactions each adult partakes in
         self.J = J  # no. lexical items drawn per interaction
 
+        self.A = A  # probability [0,1] a new classifier is added, given an empty classifier
+        self.D = D  # probability [0,1] a classifier is dropped 
+
         self.productive = productive  # method for productivity: 'TP' or 'majority'
         self.lex_dist_type = lex_dist_type  # Dist. type of nouns in lexicon: 'zipf' or 'uniform'
         # Method for classifier initialzation:
@@ -153,6 +157,7 @@ class Simulation(object):
         # 'fixed': Each feature gets B subfeatures exactly
         # 'variable': Each feature gets between 1 and B subfeatures randomly
         self.feature_init = feature_init  # 'fixed', 'variable', None
+        self.classifier_drop = classifier_drop  # Method for dropping classifier: 'general' or 'random'
         ### === ###
 
         ### STORAGE ###
@@ -168,6 +173,18 @@ class Simulation(object):
         self.init_start_state()
         ### === ###
     
+    def get_new_classifier(self):  # Only in feature hierarchy case
+        v = np.zeros(self.F)
+        if self.classifier_init[1] == "single":
+            random_idx = np.random.choice(self.F)
+            v[self.feature_hierarchy.get_features(random_idx)] = 1
+        else:  # "multiple"
+            num_feats = np.random.choice(np.arange(1, self.H + 1))
+            target_feats = np.random.choice(self.F, num_feats)
+            for t in target_feats:
+                v[self.feature_hierarchy.get_features(t)] = 1
+        return v
+
     def init_productive_classifiers(self):
         if self.classifier_init == ["identity"]:
             assert self.C == self.F
@@ -189,14 +206,7 @@ class Simulation(object):
             M[0] += v_0
 
             for i in range(1, self.C):
-                v = np.zeros(self.F)
-                if self.classifier_init[1] == "single":
-                    v[self.feature_hierarchy.get_features(i % self.F)] = 1
-                else:  # "multiple"
-                    num_feats = np.random.choice(np.arange(1, self.H + 1))
-                    target_feats = np.random.choice(self.F, num_feats)
-                    for t in target_feats:
-                        v[self.feature_hierarchy.get_features(t)] = 1
+                v = self.get_new_classifier()
                 M[i] += v
     
             return M
@@ -244,6 +254,22 @@ class Simulation(object):
 
         return Adult(self.lexicon, self.C, self.F, productivity)                    
 
+    def mutate_classifier_set(self, a):
+        cl_num_feats = np.sum(self.adults[a].classifier_state, axis=1)
+
+        will_del = np.random.choice([True, False], p=[self.D, 1-self.D])
+        if will_del:
+            if self.classifier_drop == "general":
+                target_idx = np.argmin(cl_num_feats)
+            else:  # self.classifier_drop == "random"
+                target_idx = np.random.choice(self.C)
+            self.adults[a].classifier_state[target_idx] = 0
+
+        will_add = np.random.choice([True, False], p=[self.A, 1-self.A])
+        if will_add and (0 in cl_num_feats):
+            target_idx = np.where(cl_num_feats == 0)[0][0]
+            self.adults[a].classifier_state[target_idx] = self.get_new_classifier()
+
     def simulate(self):
         """
         n individuals sorted by age (say, 100 or 1000?)
@@ -286,6 +312,9 @@ class Simulation(object):
             self.children.insert(0, Child(self.lexicon, self.C, self.F))
 
             for a in range(self.N - self.K):  # Adults
+                if self.classifier_init[0] == "hierarchy":
+                    self.mutate_classifier_set(a)  # Chance add/drop classifiers
+
                 targets = np.random.choice(self.K, self.I)  # Choose target interactions
                 for t in targets:
                     noun_idxs = self.lexicon.get_random_noun_idxs(self.J)  
@@ -321,10 +350,12 @@ def main(args):
     #     V=1000, C=25, F=40, 
     #     G=4, H=3, B=3,
     #     I=5, J=5, 
+    #     A=0.01, D=0.01,
     #     productive='TP', 
     #     lex_dist_type='zipf', 
     #     classifier_init=['hierarchy', 'single'],
-    #     feature_init='fixed'
+    #     feature_init='fixed',
+    #     classifier_drop='general'
     # )
 
     sim = Simulation(
@@ -333,10 +364,12 @@ def main(args):
         V=args.V, C=args.C, F=args.F, 
         G=args.G, H=args.H, B=args.B,
         I=args.I, J=args.J, 
+        A=args.A, D=args.D,
         productive=args.PROD, 
         lex_dist_type=args.LEX_TYPE, 
         classifier_init=args.CLASS_INIT,
-        feature_init=args.FEAT_INIT
+        feature_init=args.FEAT_INIT,
+        classifier_drop=args.CLASS_DROP
     )
 
     sim.simulate()
@@ -369,10 +402,14 @@ if __name__ == "__main__":
     parser.add_argument('-I', type=int, default=5, help="No. interactions each adult partakes in")
     parser.add_argument('-J', type=int, default=5, help="No. lexical items drawn per interaction")
 
+    parser.add_argument('-A', type=int, default=0.01, help="Probability [0,1] a new classifier is added")
+    parser.add_argument('-D', type=int, default=0.01, help="Probability [0,1] a classifier is dropped")
+
     parser.add_argument('--PROD', type=str, default='TP', help="Method for productivity")
     parser.add_argument('--LEX_TYPE', type=str, default='zipf', help="Dist. type of nouns in lexicon")
     parser.add_argument('--CLASS_INIT', nargs='+', default=['hierarchy', 'single'], help="Method for classifier initialzation")
     parser.add_argument('--FEAT_INIT', type=str, default='fixed', help="Method for feature hierarchy initialization")
+    parser.add_argument('--CLASS_DROP', type=str, default='general', help="Method for dropping classifiers")
     
     args = parser.parse_args()
 
