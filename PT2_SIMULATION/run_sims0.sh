@@ -3,7 +3,7 @@
 # simset is the collection under which all simulations ran are stored
 # simulations MUST be named simX for visualization to work
 
-simset=set1_dynclassifiers
+simset=set0_summary
 
 # Canonical case
 python3 main.py --NAME sim0 --SIMSET $simset 

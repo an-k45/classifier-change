@@ -402,8 +402,8 @@ if __name__ == "__main__":
     parser.add_argument('-I', type=int, default=5, help="No. interactions each adult partakes in")
     parser.add_argument('-J', type=int, default=5, help="No. lexical items drawn per interaction")
 
-    parser.add_argument('-A', type=int, default=0.01, help="Probability [0,1] a new classifier is added")
-    parser.add_argument('-D', type=int, default=0.01, help="Probability [0,1] a classifier is dropped")
+    parser.add_argument('-A', type=float, default=0.01, help="Probability [0,1] a new classifier is added")
+    parser.add_argument('-D', type=float, default=0.01, help="Probability [0,1] a classifier is dropped")
 
     parser.add_argument('--PROD', type=str, default='TP', help="Method for productivity")
     parser.add_argument('--LEX_TYPE', type=str, default='zipf', help="Dist. type of nouns in lexicon")
