@@ -35,5 +35,4 @@ python3 main.py -C Chinese -L Cantonese -T child -S not_noun
 
 
 # Select out subsets 
-python3 parse_main_output.py -cl
-python3 parse_main_output.py -hom
+python3 parse_main_output.py -cl -hom
