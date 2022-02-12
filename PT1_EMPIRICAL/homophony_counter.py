@@ -110,7 +110,6 @@ def count_classifier_homophony(data, syntax_type):
                 cl_phone_symbol_map[classifier_phone] = set([])
             cl_phone_symbol_map[classifier_phone].add(classifier_symbol)
 
-            # TODO: Store row information, if necessary, instead of counts
             update_homophony_counter(counter, noun_phone, noun_symbol, classifier_phone)
 
     # Resolve incongruent cases by searching for the appropriate character manually, based on stored character-phone mappings. 
@@ -134,7 +133,6 @@ def count_classifier_homophony(data, syntax_type):
                     unresolved.append(row)
                     continue
 
-                # TODO: Instead of iterating by index from 0...n, try a oscillating algorithm? 
                 cl_symbol_index = None
                 try:
                     for cl_s in cl_symbols:
@@ -148,7 +146,7 @@ def count_classifier_homophony(data, syntax_type):
 
                 if cl_symbol_index:
                     try:
-                        noun_symbol = row["gloss"].split()[cl_symbol_index + noun_offset]  # Possible noun_offset still buggy due to 'adv'. 
+                        noun_symbol = row["gloss"].split()[cl_symbol_index + noun_offset] 
                     except IndexError:
                         unresolved.append(row)
                         continue
@@ -157,7 +155,6 @@ def count_classifier_homophony(data, syntax_type):
                     continue
 
                 incongruent_list.remove(index)
-                # TODO: Store row information, if necessary, instead of counts
                 update_homophony_counter(counter, noun_phone, noun_symbol, classifier_phone)
     
     return counter, unresolved
