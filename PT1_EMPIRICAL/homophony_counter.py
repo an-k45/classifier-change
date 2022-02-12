@@ -72,6 +72,15 @@ def update_homophony_counter(counter, noun_phone, noun_symbol, classifier_phone)
         counter[noun_phone][noun_symbol][classifier_phone] = 0
     counter[noun_phone][noun_symbol][classifier_phone] += 1
 
+def gen_oscillates(L, start):
+    O = [start]
+    a, b = 0, len(L) - 1
+    cur = start
+    for i in range(1, len(L) - 1):
+        O.append(start + i)
+        O.append(start - i)
+    return list(filter(lambda x: a <= x <= b, O))
+
 def count_classifier_homophony(data, syntax_type):
     """ If classifiers are a system of communicative efficiency, then we expect
     nouns x_1 and x_2, with phonology y, to more often than not have different
@@ -135,9 +144,10 @@ def count_classifier_homophony(data, syntax_type):
 
                 cl_symbol_index = None
                 try:
+                    gloss = row["gloss"].split()
+                    idxs = gen_oscillates(gloss, i)
                     for cl_s in cl_symbols:
-                        gloss = row["gloss"].split()
-                        for j in range(len(gloss)):
+                        for j in idxs:
                             if gloss[j] == cl_s:
                                 cl_symbol_index = j
                                 raise EndLoop
