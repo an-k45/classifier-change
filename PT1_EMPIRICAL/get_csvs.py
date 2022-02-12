@@ -14,37 +14,30 @@ COLLECTIONS = {
 
 # Adapted from https://github.com/zoeyliu18/Negative_Constructions/
 
-def get_existing_csvs(collection, language):
+def get_existing_csvs(out_dir):
     """ Return a list of existing CSVs for a given collection and language
     """
     exists = []
-    for file in os.listdir("./corpora/{}/{}".format(collection, language)):
+    for file in os.listdir(out_dir):
         if file.endswith('.csv'):
             file = file.split('.')[0]
             exists.append(file)
     return exists
 
-def write_csvs(collection, language, exists):
+def write_csvs(collection, language, exists, out_dir):
     """ Write to CSVs the relevant data for a given collection and language, if that
     CSV does not already exist.
     """
-    output_path = "./corpora/{}/{}/".format(collection, language)
     for corpus in COLLECTIONS[collection][language]:
         if corpus not in exists:
             data = cpy.get_utterances(corpus = corpus)
-            data.to_csv(output_path + corpus + ".csv")
+            data.to_csv(out_dir + corpus + ".csv")
 
 def main(collection, language):
     """ Download then write the CSVs for a given collection and language
     """
-    if "corpora" not in os.listdir("./"):
-        os.mkdir("./corpora")
-    
-    if collection not in os.listdir("./corpora"):
-        os.mkdir("./corpora/" + collection)
-    
-    if language not in os.listdir("./corpora/" + collection):
-        os.mkdir("./corpora/{}/{}".format(collection, language))
+    out_dir = "./corpora/{}/{}".format(collection, language)
+    os.makedirs(out_dir, exist_ok=True)
 
-    exists = get_existing_csvs(collection, language)
-    write_csvs(collection, language, exists)
+    exists = get_existing_csvs(out_dir)
+    write_csvs(collection, language, exists, out_dir)

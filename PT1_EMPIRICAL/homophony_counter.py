@@ -1,5 +1,4 @@
-import childespy as cpy
-from numpy.core.numeric import indices
+import numpy as np
 import pandas as pd 
 import os
 

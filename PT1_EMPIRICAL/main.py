@@ -4,7 +4,7 @@ import json
 import os
 import sys
 
-import get_csvs as getter
+# import get_csvs as getter
 import homophony_counter as counter
 
 def get_syntax(syntax_type):
@@ -24,56 +24,35 @@ def get_syntax(syntax_type):
         syntax += ["cl (?!(?:adj|adv))[^n][a-z:]*", "cl adv [^n][a-z:]*", "cl adj [^n][a-z:]*"]
     return syntax
 
-def handle_output_path(collection, language, want_children, syntax_type):
-    """ Return output path, and create directories if they don't exist. 
-    """
-    corpora_type = "child" if want_children else "adult"
-
-    if "output" not in os.listdir("./"):
-        os.mkdir("./output")
-
-    if "main" not in os.listdir("./output"):
-        os.mkdir("./output/main")
-
-    if corpora_type not in os.listdir("./output/main"):
-        os.mkdir("./output/main/" + corpora_type)
-
-    if syntax_type not in os.listdir("./output/main" + corpora_type):
-        os.mkdir("./output/main/" + corpora_type + "/" + syntax_type)
-    
-    return "./output/main/{}/{}/{}_{}".format(corpora_type, syntax_type, collection, language)
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--collection", help="collection name")
-    parser.add_argument("-l", "--language", help="language name")
-    parser.add_argument("-ch", "--want_children", help="y if child, n if adult")
-    parser.add_argument("-s", "--syntax_type", help="syntax: all, noun, dem_noun, det_noun, num_noun, not_noun")
+
+    parser.add_argument("-C", type=str, required=True, help="Collection name")
+    parser.add_argument("-L", type=str, required=True, help="Language name")
+    parser.add_argument("-T", type=str, required=True, help="Target group: child or adult")
+    parser.add_argument("-S", type=str, required=True, help="Syntax type: all, noun, dem_noun, det_noun, num_noun, not_noun")
+
     args = parser.parse_args()
-    
-    if not args.collection or not args.language or not args.want_children or not args.syntax_type:
-        parser.print_help()
-        sys.exit()
 
     print("=== RUNNING CLASSIFIER ===")
-    print("ARGUMENTS: {}, {}, {}, {}".format(args.collection, args.language, args.want_children, args.syntax_type))
+    print("ARGUMENTS: {}, {}, {}, {}".format(args.C, args.L, args.T, args.S))
 
-    collection = args.collection
-    language = args.language
-    want_children = False if args.want_children == 'n' else True
-    syntax_type = args.syntax_type
+    collection, language, syntax_type = args.C, args.L, args.S
+    want_children = False if args.T == 'adult' else True
 
-    getter.main(collection, language)
+    # getter.main(collection, language)
 
     syntax = get_syntax(syntax_type)
     data_cl, homophony_counter, unresolved = counter.main(collection, language, syntax, syntax_type, want_children)
 
-    path = handle_output_path(collection, language, want_children, syntax_type)
+    out_dir = "./output/main/{}/{}/".format(args.T, syntax_type)
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = out_dir + "{}_{}".format(collection, language)
 
     # print(unresolved)
-    data_cl.to_csv(path + "_cl.csv")
-    with open(path + ".json", 'w') as outfile:
+    data_cl.to_csv(out_path + "_cl.csv")
+    with open(out_path + ".json", 'w') as outfile:
         json.dump(homophony_counter, outfile, ensure_ascii=False, indent=4, sort_keys=True)
-    with open(path + "_fail.txt", 'w') as outfile:
+    with open(out_path + "_fail.txt", 'w') as outfile:
         unresolved = [item.to_string() for item in unresolved]
         outfile.write("\n\n".join(unresolved))
