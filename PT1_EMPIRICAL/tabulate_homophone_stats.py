@@ -1,12 +1,40 @@
 import argparse
 import json
 import re
+import random
+
+random.seed("lchange'22")
 
 syll_rx = re.compile("[0-9]")
 
 def read_data(fname):
     with open(fname, "r") as f:
         return json.load(f)
+
+def dropout(data, dropoutnum):
+    while dropoutnum > 0:
+        wordform, words = random.choice(list(data.items()))
+        wf_numsylls = len(syll_rx.findall(wordform))
+        if not wf_numsylls: # skip words without tone marks
+            continue
+        word, cls = random.choice(list(words.items()))
+        if len(word) != wf_numsylls: # excludes borrowed words and ones that are actually disambiguated by extra characters
+            continue
+        cl, freq = random.choice(list(cls.items()))
+        cls[cl] = freq-1
+
+        # trim empties
+        if cls[cl] == 0:
+            del cls[cl]
+        if len(words[word]) == 0:
+            del words[word]
+        if len(data[wordform]) == 0:
+            del data[wordform]
+
+        dropoutnum -= 1
+    return data
+
+
 
 def get_hstats(data):
 
@@ -102,23 +130,77 @@ def display_hstats(hstats, infname):
     print("K Number of wforms w/ Homophones:\t\t\t%s" % hstats["K"])
     print("k_1 Number of wforms w/ Hphones Disambig'd by Cl:\t%s" % hstats["k_1"])
     print("k_full Number of '' '' '' fully Disambig'd by Cl:\t%s" % hstats["k_full"])
-    print("Percent wforms w Hphones K/W\t\t\t\t%s%%" % round(hstats["K"]/hstats["W"]*100,3))
-    print("Percent Hphone wforms Disambig'd k_1/K\t\t\t%s%%" % round(hstats["k_1"]/hstats["K"]*100,3))
-    print("Percent wforms Disambig'd k_1/W\t\t\t\t%s%%" % round(hstats["k_1"]/hstats["W"]*100,3))
-    print("Percent Hphone wforms '' k_full/K\t\t\t%s%%" % round(hstats["k_full"]/hstats["K"]*100,3))
-    print("Percent wforms '' k_full/W\t\t\t\t%s%%" % round(hstats["k_full"]/hstats["W"]*100,3))
+    print("Percent wforms w Hphones K/W\t\t\t\t%s%%" % round(hstats["K"]/hstats["W"]*100,3) if hstats["W"] else 0)
+    print("Percent Hphone wforms Disambig'd k_1/K\t\t\t%s%%" % round(hstats["k_1"]/hstats["K"]*100,3) if hstats["K"] else 0)
+    print("Percent wforms Disambig'd k_1/W\t\t\t\t%s%%" % round(hstats["k_1"]/hstats["W"]*100,3) if hstats["W"] else 0)
+    print("Percent Hphone wforms '' k_full/K\t\t\t%s%%" % round(hstats["k_full"]/hstats["K"]*100,3) if hstats["K"] else 0)
+    print("Percent wforms '' k_full/W\t\t\t\t%s%%" % round(hstats["k_full"]/hstats["W"]*100,3) if hstats["W"] else 0)
     print()
     print("TOKENS:")
     print("N Number of Noun Toks:\t\t\t\t\t%s" % hstats["N_t"])
     print("H Number of Nouns Toks w/ Homophones:\t\t\t%s" % hstats["H_t"])
     print("h Number of Nouns Toks w/ Hphones Disambig'd by Cl:\t%s" % hstats["h_t"])
     print("h_full Number of '' '' '' '' fully Disambig'd by Cl:\t%s" % hstats["h_tfull"])
-    print("Percent Nouns Toks w/ Hphones H/N\t\t\t%s%%" % round(hstats["H_t"]/hstats["N_t"]*100,3))
-    print("Percent Homophones Disambig'd h/H\t\t\t%s%%" % round(hstats["h_t"]/hstats["H_t"]*100,3))
-    print("Percent Nouns Toks Disambig'd h/N\t\t\t%s%%" % round(hstats["h_t"]/hstats["N_t"]*100,3))
-    print("Percent '' fully Disambig'd h_full/H\t\t\t%s%%" % round(hstats["h_tfull"]/hstats["H_t"]*100,3))
-    print("Percent '' '' fully Disambig'd h_full/N\t\t\t%s%%" % round(hstats["h_tfull"]/hstats["N_t"]*100,3))
+    print("Percent Nouns Toks w/ Hphones H/N\t\t\t%s%%" % round(hstats["H_t"]/hstats["N_t"]*100,3) if hstats["N_t"] else 0)
+    print("Percent Homophones Disambig'd h/H\t\t\t%s%%" % round(hstats["h_t"]/hstats["H_t"]*100,3) if hstats["H_t"] else 0)
+    print("Percent Nouns Toks Disambig'd h/N\t\t\t%s%%" % round(hstats["h_t"]/hstats["N_t"]*100,3) if hstats["N_t"] else 0)
+    print("Percent '' fully Disambig'd h_full/H\t\t\t%s%%" % round(hstats["h_tfull"]/hstats["H_t"]*100,3) if hstats["H_t"] else 0)
+    print("Percent '' '' fully Disambig'd h_full/N\t\t\t%s%%" % round(hstats["h_tfull"]/hstats["N_t"]*100,3) if hstats["N_t"] else 0)
 
+
+def write(f, trial, percent, hstats):
+    fout.write("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (trial, percent,
+                     hstats["W"],
+                     hstats["K"],
+                     hstats["k_1"],
+                     hstats["k_full"],
+                     hstats["K"]/hstats["W"] if hstats["W"] else 0,
+                     hstats["k_1"]/hstats["W"] if hstats["W"] else 0,
+                     hstats["k_1"]/hstats["K"] if hstats["K"] else 0,
+                     hstats["k_full"]/hstats["W"] if hstats["W"] else 0,
+                     hstats["k_full"]/hstats["K"] if hstats["K"] else 0,
+                     hstats["N_t"],
+                     hstats["H_t"],
+                     hstats["h_t"],
+                     hstats["h_tfull"],
+                     hstats["H_t"]/hstats["N_t"] if hstats["N_t"] else 0,
+                     hstats["h_t"]/hstats["N_t"] if hstats["N_t"] else 0,
+                     hstats["h_t"]/hstats["H_t"] if hstats["H_t"] else 0,
+                     hstats["h_tfull"]/hstats["N_t"] if hstats["N_t"] else 0,
+                     hstats["h_tfull"]/hstats["H_t"] if hstats["H_t"] else 0,
+                     ))
+
+
+
+def limit_to_cantonese(infname, dropoutnum):
+    print("DROPOUT:", dropoutnum)
+    all_hstats = {"W":[], "N":[], "H":[], "h":[], "K":[], "k_1":[], "k_full":[], "k_2":[], "N_t":[], "H_t":[], "h_t":[], "h_tfull":[]}
+    for trial in range (0,100):
+#        print("Trial:", trial)
+        data = read_data(args.infname)
+        data = dropout(data, dropoutnum)
+        hstats = get_hstats(data)
+        for k, v in hstats.items():
+            all_hstats[k].append(v)
+
+    mean_hstats = {k:sum(v)/len(v) for k,v in all_hstats.items()}
+    display_hstats(mean_hstats, infname)
+
+def many_dropout_trials(infname):
+    data = read_data(args.infname)
+    hstats = get_hstats(data)
+    with open(args.outfname, "w") as fout:
+        fout.write("Trial,Percent,W,K,k,k_full,K/W,k/W,k/K,kfull/W,kfull/K,N,H,h,h_full,H/N,h/N,h/H,hfull/N,hfull/H\n")
+        write(fout, 0,100,hstats)
+        dropoutnum = int(hstats["N_t"]/10)
+        for trial in range (1,101):
+            print("Trial %s" % trial)
+            for i in range(90,0,-10):
+                data = dropout(data, dropoutnum)
+                hstats = get_hstats(data)
+                write(fout, trial, i, hstats)
+    #            display_hstats(hstats, args.infname)
+            data = read_data(args.infname)
 
 
 if __name__ == "__main__":
@@ -127,11 +209,16 @@ if __name__ == "__main__":
     parser.add_argument("outfname", type=str, help="Language name")
     args = parser.parse_args()
 
+    if "Mandarin" in args.infname:
+        print("Limited Mandarin")
+        dropoutnum = 11011 # DIFFERENCE BETWEEN NUM TOKS IN ADULT MANDARIN AND CANTONESE
+        limit_to_cantonese(args.infname, dropoutnum)
+        dropoutnum = 3250 # ACHIEVES CANTONESE TYPE COUNT
+        limit_to_cantonese(args.infname, dropoutnum)
+
     data = read_data(args.infname)
     hstats = get_hstats(data)
     display_hstats(hstats, args.infname)
 
-#    dropnum = int(hstats["N_t"]/10)
-    for i in range(0,10):
-        hstats = get_hstats(data)
-        display_hstats(hstats, args.infname)
+    
+
