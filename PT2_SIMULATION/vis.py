@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-sns.set()
+sns.set(font_scale = 1.25)
 
 def process_by_metric(sim_file, sim_num, metric):
     pre_sim_data = sim_file[sim_num + "_" + metric]
@@ -30,7 +30,13 @@ def smooth_sim_data(sim_data, n):
 
 def make_graph(sim_data, path):
     sim_plot = sns.relplot(data=sim_data, kind="line", dashes=False)
-    sim_plot.savefig(path)
+    sns.move_legend(
+        sim_plot, "upper center",
+        bbox_to_anchor=(.5, 1), ncol=3, title=None, frameon=True,
+    )
+    sim_plot.set(xlabel = "", ylabel = "")
+
+    sim_plot.savefig(path, bbox_inches = 'tight', pad_inches = 0) # bbox_inches = 'tight', pad_inches = 0
 
 def main(args):
     in_dir = "./output/{}/data/".format(args.SIMSET)
@@ -49,7 +55,7 @@ def main(args):
                 sim_data = process_by_metric(sim_file, sim_num, metric)
                 smooth_data = smooth_sim_data(sim_data, 10)
 
-                graph_name = sim_num + "_" + metric_short[metric] + ".png"
+                graph_name = sim_num + "_" + metric_short[metric] + ".pdf"
                 graph_path = os.path.join(out_dir, graph_name)
                 make_graph(smooth_data, graph_path)
 
