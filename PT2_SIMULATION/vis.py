@@ -30,13 +30,13 @@ def smooth_sim_data(sim_data, n):
 
 def make_graph(sim_data, path):
     sim_plot = sns.relplot(data=sim_data, kind="line", dashes=False)
-    sns.move_legend(
-        sim_plot, "upper center",
-        bbox_to_anchor=(.5, 1), ncol=3, title=None, frameon=True,
-    )
+    # sns.move_legend(
+    #     sim_plot, "upper center",
+    #     bbox_to_anchor=(.5, 1), ncol=3, title=None, frameon=True,
+    # )
     sim_plot.set(xlabel = "", ylabel = "")
 
-    sim_plot.savefig(path, bbox_inches = 'tight', pad_inches = 0) # bbox_inches = 'tight', pad_inches = 0
+    sim_plot.savefig(path) # bbox_inches = 'tight', pad_inches = 0
 
 def main(args):
     in_dir = "./output/{}/data/".format(args.SIMSET)
