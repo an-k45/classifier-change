@@ -31,4 +31,4 @@ python3 main.py --NAME sim18 --SIMSET $simset
 python3 main.py --NAME sim19 --SIMSET $simset
 
 # python3 merge.py --SIMSET $simset
-# python3 vis.py --SIMSET $simset
+python3 vis.py --SIMSET $simset
