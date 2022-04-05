@@ -34,7 +34,7 @@ def make_graph(sim_data, path):
     #     sim_plot, "upper center",
     #     bbox_to_anchor=(.5, 1), ncol=3, title=None, frameon=True,
     # )
-    sim_plot.set(xlabel = "", ylabel = "")
+    sim_plot.set(xlabel = "Iteration no.", ylabel = "No. features")
 
     sim_plot.savefig(path) # bbox_inches = 'tight', pad_inches = 0
 
@@ -45,6 +45,24 @@ def main(args):
 
     metrics = ['feature_metrics', 'duplicate_classifiers']
     metric_short = {'feature_metrics': 'fm', 'duplicate_classifiers': 'dc'}
+
+    if args.SIMSET == "set4_avg":
+        sim_smooth_data = []
+        for file in tqdm(os.listdir(in_dir)):
+            path = os.path.join(in_dir, file)
+            sim_file = np.load(path)
+            sim_num = file.split(".")[0]
+            
+            sim_data = process_by_metric(sim_file, sim_num, metrics[0])
+            smooth_data = smooth_sim_data(sim_data, 10)
+            sim_smooth_data.append(smooth_data)
+
+        avg_sim_smooth_data = pd.concat(sim_smooth_data).groupby(level=0).mean()  # https://stackoverflow.com/a/38940997
+        
+        graph_name = "simavg_fm.pdf"
+        graph_path = os.path.join(out_dir, graph_name)
+        make_graph(avg_sim_smooth_data, graph_path)
+        return
 
     for file in tqdm(os.listdir(in_dir)):
         if "sim" in file:
