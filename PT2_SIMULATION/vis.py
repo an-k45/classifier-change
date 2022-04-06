@@ -62,7 +62,6 @@ def main(args):
         graph_name = "simavg_fm.pdf"
         graph_path = os.path.join(out_dir, graph_name)
         make_graph(avg_sim_smooth_data, graph_path)
-        return
 
     for file in tqdm(os.listdir(in_dir)):
         if "sim" in file:
